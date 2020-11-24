@@ -228,6 +228,15 @@ public class WebServer {
 	  	case "rtf":
 	  		out.println("Content-Type: text/plain");
 	  		break;
+	  	case "mp3":
+	  		out.println("Content-Type: audio/mpeg");
+	  		break;
+	  	case "mp4":
+	  		out.println("Content-Type: video/mp4");
+	  		break;
+	  	case "xml":
+	  		out.println("Content-Type: application/xml");
+	  		break;
 	  	default : 
 	  		out.println("Content-Type: text/plain");
 	  		break;

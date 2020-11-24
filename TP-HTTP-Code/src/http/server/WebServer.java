@@ -217,6 +217,9 @@ public class WebServer {
 	  	case"gif":
 	  		out.println("Content-Type: image/gif");
 	  		break;
+	  	default : 
+	  		out.println("Content-Type: text/plain");
+	  		break;
 	  }
 	  out.println("Content-Length: " + length );
 	  out.println("Server: Bot");
@@ -258,11 +261,12 @@ public class WebServer {
 //				  out.flush();
 				  
 			  }else {//Not Found
-				  makeNotFoundHeader(out,"<H1>Page Not Found</H2>".length()); //TODO length du html d'en dessous
+				  makeNotFoundHeader(out,"<H1>Page Not Found</H2>".length()); 
 				  out.write("<H1>Page Not Found</H2>");
 			  }
 		  }else {
-			  
+			  makeHeaderOk(out,ressourceName,0);
+			  out.flush();
 		  }   
 	  }catch (Exception ex) {
       	System.out.println("Error: " + ex);
@@ -310,7 +314,24 @@ public class WebServer {
    */
   public void headRequest(PrintWriter out, String ressourceName) {
 	  try {
-		  
+		  if(!ressourceName.isEmpty()) {
+			  File file = new File(ressourceName);
+			  if(file.exists()) {//OK
+
+				  //header de succes
+				  makeHeaderOk(out,ressourceName,file.length());
+				  out.flush();
+				  
+				  //sans le body
+				  
+			  }else {//Not Found
+				  makeNotFoundHeader(out,"<H1>Page Not Found</H2>".length()); 
+				  out.write("<H1>Page Not Found</H2>");
+			  }
+		  }else {
+			  makeHeaderOk(out,ressourceName,0);
+			  out.flush();
+		  }
 	  }catch (Exception ex) {
       	System.out.println("Error: " + ex);
       	try {
@@ -357,6 +378,24 @@ public class WebServer {
    */
   public void deleteRequest(PrintWriter out, String ressourceName) {
 	  try {
+		  if(!ressourceName.isEmpty()) {
+			  File file = new File(ressourceName);
+			  if(file.delete()) {//OK
+
+				  //header de succes
+				  makeHeaderOk(out,ressourceName,file.length());
+				  out.flush();
+				  
+				  //sans le body
+				  
+			  }else {//Not Found
+				  makeNotFoundHeader(out,"<H1>Page Not Found</H2>".length()); 
+				  out.write("<H1>Page Not Found</H2>");
+			  }
+		  }else {
+			  makeHeaderOk(out,ressourceName,0);
+			  out.flush();
+		  }
 		  
 	  }catch (Exception ex) {
       	System.out.println("Error: " + ex);

@@ -5,11 +5,16 @@ package http.server;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.stream.Collectors;
 
 /**
@@ -51,8 +56,11 @@ public class WebServer {
         BufferedReader in = new BufferedReader(new InputStreamReader(
             remote.getInputStream()));
    
+        PrintWriter out = new PrintWriter(remote.getOutputStream());
+
+        OutputStream outPut = remote.getOutputStream();
         
-        BufferedOutputStream out = new BufferedOutputStream(remote.getOutputStream());
+        //BufferedOutputStream out = new BufferedOutputStream(remote.getOutputStream());
 
         // read the data sent. We basically ignore it,
         // stop reading once a blank line is hit. This
@@ -84,7 +92,7 @@ public class WebServer {
         
         switch(type) {
         	case "GET" : 
-        		getRequest(out,ressourcePath);
+        		getRequest(out,outPut,ressourcePath);
         		break;
         	case "POST":
         		postRequest(out,ressourcePath);
@@ -156,11 +164,11 @@ public class WebServer {
         System.out.println("Error: " + e);
         try {
         	Socket remote = s.accept();
-        	BufferedOutputStream out = new BufferedOutputStream(remote.getOutputStream());
+        	PrintWriter out = new PrintWriter(remote.getOutputStream());
         	//https://www.baeldung.com/java-string-to-byte-array
-        	String inputString = makeServerErrorHeader();
-        	byte[] byteArray = inputString.getBytes();
-        	out.write(byteArray);
+        	makeServerErrorHeader(out);
+        	//byte[] byteArray = inputString.getBytes();
+        	//out.write(inputString);
         	
         } catch (Exception ex) {
         	System.out.println("Error: " + ex);
@@ -169,41 +177,51 @@ public class WebServer {
     }
   }
   
-  public String makeServerErrorHeader() {
-	  String res = "HTTP/1.0 500 Internal Server Error"+"\r\n";
-	  res+="Content-Type: text/html"+"\r\n"+"Server: Bot"+"\r\n\r\n";
-	  return res;
+  public void makeServerErrorHeader(PrintWriter out) {
+	  out.println("HTTP/1.0 500 Internal Server Error");
+	  out.println("Content-Type: text/html");
+	  out.println("Server: Bot");
+	  out.println("");
+	  
   }
   
-  public String makeNotFoundHeader() {
-	  String res = "HTTP/1.0 404 Not Found"+"\r\n";
-	  res+="Content-Type: text/html"+"\r\n"+"Server: Bot"+"\r\n\r\n";
-	  return res;
+  public void makeNotFoundHeader(PrintWriter out,long length) {
+	  out.println("HTTP/1.0 404 Not Found");
+	  out.println("Content-Type: text/html");
+	  out.println("Content-Length: " + length );
+	  out.println("Server: Bot");
+	  out.println("");
+	  
   }
   
-  public String makeHeaderOk(String ressourceName,long length) {
-	  String header = "HTTP/1.0 200 OK"+"\r\n";
-	  String []split = ressourceName.split(".");
+  public void makeHeaderOk(PrintWriter out,String ressourceName,long length) {
+	  out.println("HTTP/1.0 200 OK");
+	  String []split = ressourceName.split("\\.");
+	  //System.out.println("split "+split[0]);
 	  String extension = split[1];
-	  System.out.println("extension du fichier"+extension);
+	  System.out.println("extension du fichier : "+extension);
 	  //https://developer.mozilla.org/fr/docs/Web/HTTP/Basics_of_HTTP/MIME_types
 	  switch(extension){
 	  	case "html" :
-	  		header+="Content-Type: text/html"+"\r\n";
+	  		out.println("Content-Type: text/html");
 	  		break;
 	  	case"png":
-	  		header+="Content-Type: image/png"+"\r\n";
+	  		out.println("Content-Type: image/png");
 	  		break;
 	  	case"jpg":
-	  		header+="Content-Type: image/jpeg"+"\r\n";
+	  		out.println("Content-Type: image/jpeg");
 	  		break;
 	  	case"jpeg":
-	  		header+="Content-Type: image/jpeg"+"\r\n";
+	  		out.println("Content-Type: image/jpeg");
+	  		break;
+	  	case"gif":
+	  		out.println("Content-Type: image/gif");
 	  		break;
 	  }
-	  header += "Content-Length: " + length + "\r\n";
-	  header+="Server: Bot"+"\r\n\r\n";
-	  return header;
+	  out.println("Content-Length: " + length );
+	  out.println("Server: Bot");
+	  out.println("");
+	  
   }
   
   /**
@@ -212,7 +230,7 @@ public class WebServer {
    * @param out
    * @param ressourceName
    */
-  public void getRequest(BufferedOutputStream out, String ressourceName) {
+  public void getRequest(PrintWriter out, OutputStream outPut, String ressourceName) {
 	  try {
 		  if(!ressourceName.isEmpty()) {
 			  File file = new File(ressourceName);
@@ -221,12 +239,27 @@ public class WebServer {
 				   * envoie du contenu 
 				   */
 				  //header de succes
-				  out.write(makeHeaderOk(ressourceName,file.length()).getBytes());
+				  makeHeaderOk(out,ressourceName,file.length());
+				  out.flush();
 				  // lecture fichier 
+				  BufferedReader br = new BufferedReader(new FileReader(file)); 
 				  
+				  Path path = Paths.get(ressourceName);
+				  
+				  Files.copy(path,outPut);
+				  
+//				  String st; 
+//				  while ((st = br.readLine()) != null){
+//				    System.out.println(st); 
+//				    //outPut.write(st.getBytes());
+//				    out.println(st); 
+//				  	//out.write(st);
+//				  } 
+//				  out.flush();
 				  
 			  }else {//Not Found
-				  out.write(makeNotFoundHeader().getBytes());
+				  makeNotFoundHeader(out,"<H1>Page Not Found</H2>".length()); //TODO length du html d'en dessous
+				  out.write("<H1>Page Not Found</H2>");
 			  }
 		  }else {
 			  
@@ -234,9 +267,10 @@ public class WebServer {
 	  }catch (Exception ex) {
       	System.out.println("Error: " + ex);
       	try {
-      		String inputString = makeServerErrorHeader();
-        	byte[] byteArray = inputString.getBytes();
-        	out.write(byteArray);
+      		makeServerErrorHeader(out);
+      		//String inputString = makeServerErrorHeader();
+        	//byte[] byteArray = inputString.getBytes();
+        	//out.write(inputString);
       	}catch (Exception e) {
             System.out.println("Error: " + e);
       	}
@@ -249,15 +283,16 @@ public class WebServer {
    * @param out
    * @param ressourceName
    */
-  public void postRequest(BufferedOutputStream out, String ressourceName) {
+  public void postRequest(PrintWriter out, String ressourceName) {
 	  try {
 		  
 	  }catch (Exception ex) {
       	System.out.println("Error: " + ex);
       	try {
-      		String inputString = makeServerErrorHeader();
-        	byte[] byteArray = inputString.getBytes();
-        	out.write(byteArray);
+      		makeServerErrorHeader(out);
+      		//String inputString = makeServerErrorHeader();
+        	//byte[] byteArray = inputString.getBytes();
+        	//out.write(inputString);
       	}catch (Exception e) {
             System.out.println("Error: " + e);
       	}
@@ -273,15 +308,16 @@ public class WebServer {
    * @param out
    * @param ressourceName
    */
-  public void headRequest(BufferedOutputStream out, String ressourceName) {
+  public void headRequest(PrintWriter out, String ressourceName) {
 	  try {
 		  
 	  }catch (Exception ex) {
       	System.out.println("Error: " + ex);
       	try {
-      		String inputString = makeServerErrorHeader();
-        	byte[] byteArray = inputString.getBytes();
-        	out.write(byteArray);
+      		makeServerErrorHeader(out);
+      		//String inputString = makeServerErrorHeader();
+        	//byte[] byteArray = inputString.getBytes();
+        	//out.write(inputString);
       	}catch (Exception e) {
             System.out.println("Error: " + e);
       	}
@@ -297,15 +333,16 @@ public class WebServer {
    * @param out
    * @param ressourceName
    */
-  public void putRequest(BufferedOutputStream out, String ressourceName) {
+  public void putRequest(PrintWriter out, String ressourceName) {
 	  try {
 		  
 	  }catch (Exception ex) {
       	System.out.println("Error: " + ex);
       	try {
-      		String inputString = makeServerErrorHeader();
-        	byte[] byteArray = inputString.getBytes();
-        	out.write(byteArray);
+      		makeServerErrorHeader(out);
+      		//String inputString = makeServerErrorHeader();
+        	//byte[] byteArray = inputString.getBytes();
+        	//out.write(inputString);
       	}catch (Exception e) {
             System.out.println("Error: " + e);
       	}
@@ -318,15 +355,16 @@ public class WebServer {
    * @param out
    * @param ressourceName
    */
-  public void deleteRequest(BufferedOutputStream out, String ressourceName) {
+  public void deleteRequest(PrintWriter out, String ressourceName) {
 	  try {
 		  
 	  }catch (Exception ex) {
       	System.out.println("Error: " + ex);
       	try {
-      		String inputString = makeServerErrorHeader();
-        	byte[] byteArray = inputString.getBytes();
-        	out.write(byteArray);
+      		makeServerErrorHeader(out);
+      		//String inputString = makeServerErrorHeader();
+        	//byte[] byteArray = inputString.getBytes();
+        	//out.write(inputString);
       	}catch (Exception e) {
             System.out.println("Error: " + e);
       	}

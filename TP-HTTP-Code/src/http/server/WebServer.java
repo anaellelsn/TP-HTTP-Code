@@ -6,10 +6,12 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -90,6 +92,7 @@ public class WebServer {
 
         System.out.println(type+"  "+ressourcePath);
         
+        //https://restfulapi.net/http-methods/
         switch(type) {
         	case "GET" : 
         		getRequest(out,outPut,ressourcePath);
@@ -181,8 +184,7 @@ public class WebServer {
 	  out.println("HTTP/1.0 500 Internal Server Error");
 	  out.println("Content-Type: text/html");
 	  out.println("Server: Bot");
-	  out.println("");
-	  
+	  out.println("");  
   }
   
   public void makeNotFoundHeader(PrintWriter out,long length) {
@@ -190,8 +192,14 @@ public class WebServer {
 	  out.println("Content-Type: text/html");
 	  out.println("Content-Length: " + length );
 	  out.println("Server: Bot");
-	  out.println("");
-	  
+	  out.println("");  
+  }
+  
+  public void makeCreatedHeader(PrintWriter out) {
+	  out.println("HTTP/1.0 201 Created");
+	  out.println("Content-Type: text/html");
+	  out.println("Server: Bot");
+	  out.println("");  
   }
   
   public void makeHeaderOk(PrintWriter out,String ressourceName,long length) {
@@ -216,6 +224,9 @@ public class WebServer {
 	  		break;
 	  	case"gif":
 	  		out.println("Content-Type: image/gif");
+	  		break;
+	  	case "rtf":
+	  		out.println("Content-Type: text/plain");
 	  		break;
 	  	default : 
 	  		out.println("Content-Type: text/plain");
@@ -289,6 +300,21 @@ public class WebServer {
    */
   public void postRequest(PrintWriter out, String ressourceName) {
 	  try {
+		  //Writer fileWriter = new FileWriter("c:\\data\\output.txt", true);  //appends to file
+		  File f = new File(ressourceName);
+		  if(f.exists() && !f.isDirectory()) { //OK 200 overwrites the file
+			  Writer fileWriter = new FileWriter(ressourceName, true); //append file
+			  f = new File(ressourceName);
+			  //header de succes
+			  makeHeaderOk(out,ressourceName,f.length());
+			  out.flush();
+		  }else {
+			 if(f.createNewFile()) { //Created 201 creates the new file
+				 makeCreatedHeader(out);
+			 } else { //500 Internal Server Error
+				 makeServerErrorHeader(out);
+			 }
+		  }
 		  
 	  }catch (Exception ex) {
       	System.out.println("Error: " + ex);
@@ -326,7 +352,9 @@ public class WebServer {
 				  
 			  }else {//Not Found
 				  makeNotFoundHeader(out,"<H1>Page Not Found</H2>".length()); 
-				  out.write("<H1>Page Not Found</H2>");
+				  out.flush();
+				  //out.write("<H1>Page Not Found</H2>");
+				  
 			  }
 		  }else {
 			  makeHeaderOk(out,ressourceName,0);
@@ -356,6 +384,20 @@ public class WebServer {
    */
   public void putRequest(PrintWriter out, String ressourceName) {
 	  try {
+		  File f = new File(ressourceName);
+		  if(f.exists() && !f.isDirectory()) { //OK 200 overwrites the file
+			  Writer fileWriter = new FileWriter(ressourceName, false); //overwrites file
+			  f = new File(ressourceName);
+			  //header de succes
+			  makeHeaderOk(out,ressourceName,f.length());
+			  out.flush();
+		  }else {
+			 if(f.createNewFile()) { //Created 201 creates the new file
+				 makeCreatedHeader(out);
+			 } else { //500 Internal Server Error
+				 makeServerErrorHeader(out);
+			 }
+		  }
 		  
 	  }catch (Exception ex) {
       	System.out.println("Error: " + ex);

@@ -4,6 +4,7 @@ package http.server;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -314,6 +315,14 @@ public class WebServer {
 		  if(f.exists() && !f.isDirectory()) { //OK 200 overwrites the file
 			  Writer fileWriter = new FileWriter(ressourceName, true); //append file
 			  f = new File(ressourceName);
+			  f.setWritable(true);
+			  f.setReadable(true);
+			  BufferedWriter bw = null;
+			  bw = new BufferedWriter(fileWriter);
+		      bw.write("POST");
+		      bw.newLine();
+		      bw.flush();
+		      bw.close();
 			  //header de succes
 			  makeHeaderOk(out,ressourceName,f.length());
 			  out.flush();
@@ -397,6 +406,12 @@ public class WebServer {
 		  if(f.exists() && !f.isDirectory()) { //OK 200 overwrites the file
 			  Writer fileWriter = new FileWriter(ressourceName, false); //overwrites file
 			  f = new File(ressourceName);
+			  BufferedWriter bw = null;
+			  bw = new BufferedWriter(fileWriter);
+		      bw.write("PUT");
+		      bw.newLine();
+		      bw.flush();
+		      bw.close();
 			  //header de succes
 			  makeHeaderOk(out,ressourceName,f.length());
 			  out.flush();

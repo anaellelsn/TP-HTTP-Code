@@ -18,6 +18,8 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -109,7 +111,10 @@ public class WebServer {
         		break;
         	case "DELETE":
         		deleteRequest(out,ressourcePath);
-        		break;		
+        		break;
+        	default : 
+        		makeNotImplementedHeader(out);
+        		break;
         }
         
         /*
@@ -118,6 +123,8 @@ public class WebServer {
          * - 200 : OK
          * - 404 : Not Found
          * - 500 : Internal Server Error
+         * - 415 Unsupported Media Type 
+         * - 501 Not Implemented s
          */
         
         /*
@@ -137,6 +144,11 @@ public class WebServer {
          * 
          */
         
+        /*
+         * Ideas to addd: 
+         * 
+         * 
+         */
         
         
         // Send the response
@@ -188,6 +200,13 @@ public class WebServer {
 	  out.println("");  
   }
   
+  public void makeNotImplementedHeader(PrintWriter out) {
+	  out.println("HTTP/1.0 501 Not Implemented");
+	  out.println("Content-Type: text/html");
+	  out.println("Server: Bot");
+	  out.println("");  
+  }
+  
   public void makeNotFoundHeader(PrintWriter out,long length) {
 	  out.println("HTTP/1.0 404 Not Found");
 	  out.println("Content-Type: text/html");
@@ -204,41 +223,56 @@ public class WebServer {
   }
   
   public void makeHeaderOk(PrintWriter out,String ressourceName,long length) {
-	  out.println("HTTP/1.0 200 OK");
+	  //String [] supportedMediaType = {"html","png","jpg","jpeg","gif","rtf","txt","mp3","mp4","xml"};
 	  String []split = ressourceName.split("\\.");
 	  //System.out.println("split "+split[0]);
 	  String extension = split[1];
 	  System.out.println("extension du fichier : "+extension);
+	  
 	  //https://developer.mozilla.org/fr/docs/Web/HTTP/Basics_of_HTTP/MIME_types
 	  switch(extension){
 	  	case "html" :
+	  		out.println("HTTP/1.0 200 OK");
 	  		out.println("Content-Type: text/html");
 	  		break;
 	  	case"png":
+	  		out.println("HTTP/1.0 200 OK");
 	  		out.println("Content-Type: image/png");
 	  		break;
 	  	case"jpg":
+	  		out.println("HTTP/1.0 200 OK");
 	  		out.println("Content-Type: image/jpeg");
 	  		break;
 	  	case"jpeg":
+	  		out.println("HTTP/1.0 200 OK");
 	  		out.println("Content-Type: image/jpeg");
 	  		break;
 	  	case"gif":
+	  		out.println("HTTP/1.0 200 OK");
 	  		out.println("Content-Type: image/gif");
 	  		break;
+	  	case "txt":
+	  		out.println("HTTP/1.0 200 OK");
+	  		out.println("Content-Type: text/plain");
+	  		break;
 	  	case "rtf":
+	  		out.println("HTTP/1.0 200 OK");
 	  		out.println("Content-Type: text/plain");
 	  		break;
 	  	case "mp3":
+	  		out.println("HTTP/1.0 200 OK");
 	  		out.println("Content-Type: audio/mpeg");
 	  		break;
 	  	case "mp4":
+	  		out.println("HTTP/1.0 200 OK");
 	  		out.println("Content-Type: video/mp4");
 	  		break;
 	  	case "xml":
+	  		out.println("HTTP/1.0 200 OK");
 	  		out.println("Content-Type: application/xml");
 	  		break;
 	  	default : 
+	  		out.println("HTTP/1.0 415 Unsupported Media Type");
 	  		out.println("Content-Type: text/plain");
 	  		break;
 	  }
@@ -329,6 +363,16 @@ public class WebServer {
 		  }else {
 			 if(f.createNewFile()) { //Created 201 creates the new file
 				 makeCreatedHeader(out);
+				 Writer fileWriter = new FileWriter(ressourceName, true); //append file
+				  f = new File(ressourceName);
+				  f.setWritable(true);
+				  f.setReadable(true);
+				  BufferedWriter bw = null;
+				  bw = new BufferedWriter(fileWriter);
+			      bw.write("POST");
+			      bw.newLine();
+			      bw.flush();
+			      bw.close();
 			 } else { //500 Internal Server Error
 				 makeServerErrorHeader(out);
 			 }
@@ -417,6 +461,14 @@ public class WebServer {
 			  out.flush();
 		  }else {
 			 if(f.createNewFile()) { //Created 201 creates the new file
+				 Writer fileWriter = new FileWriter(ressourceName, false); //overwrites file
+				  f = new File(ressourceName);
+				  BufferedWriter bw = null;
+				  bw = new BufferedWriter(fileWriter);
+			      bw.write("PUT");
+			      bw.newLine();
+			      bw.flush();
+			      bw.close();
 				 makeCreatedHeader(out);
 			 } else { //500 Internal Server Error
 				 makeServerErrorHeader(out);

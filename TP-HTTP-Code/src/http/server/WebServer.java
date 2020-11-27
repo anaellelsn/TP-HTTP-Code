@@ -34,17 +34,29 @@ import java.util.stream.Collectors;
  */
 public class WebServer {
 
+	private int port;
+	
   /**
    * WebServer constructor.
+   *
    */
+	public WebServer(int port) {
+		this.port=port;
+	}
+	
+	
+	/**
+	 * Starting the server. 
+	 * Process the requests and sends the corresponding server response.
+	 */
   protected void start() {
     ServerSocket s;
 
-    System.out.println("Webserver starting up on port 3000");
-    System.out.println("(press ctrl-c to exit)");
+    System.out.println("Webserver starting up on port "+port);
+    //System.out.println("(press ctrl-c to exit)");
     try {
       // create the main server socket
-      s = new ServerSocket(3000);
+      s = new ServerSocket(port);
     } catch (Exception e) {
       System.out.println("Error: " + e);
       return;
@@ -92,8 +104,14 @@ public class WebServer {
         }else {  
         	ressourcePath="";
         }
+        long length=0;
+        for(String st : splitHeader) {
+        	String test = st.split(" ")[0];
+        	if(test.equals("Content-Length:")) length= Long.parseLong(st.split(" ")[1]);
+        }
 
         System.out.println(type+"  "+ressourcePath);
+        System.out.println("Content lenght "+length);
         
         //https://restfulapi.net/http-methods/
         switch(type) {
@@ -101,13 +119,13 @@ public class WebServer {
         		getRequest(out,outPut,ressourcePath);
         		break;
         	case "POST":
-        		postRequest(out,ressourcePath);
+        		postRequest(out,ressourcePath,length,in);
         		break;
         	case "HEAD":
         		headRequest(out,ressourcePath);
         		break;
         	case "PUT":
-        		putRequest(out,ressourcePath);
+        		putRequest(out,ressourcePath,length,in);
         		break;
         	case "DELETE":
         		deleteRequest(out,ressourcePath);
@@ -121,58 +139,13 @@ public class WebServer {
          * HTTP Status code pris en compte : 
          * 
          * - 200 : OK
+         * - 201 : Created
          * - 404 : Not Found
          * - 500 : Internal Server Error
-         * - 415 Unsupported Media Type 
-         * - 501 Not Implemented s
+         * - 415 : Unsupported Media Type 
+         * - 501 : Not Implemented s
          */
-        
-        /*
-         * Questions : 
-         * 
-         */
-        
-        /*
-         * infos sur moodle :
-         * 
-         * Le traitement d'une ressource web statique se traduit, côté serveur HTTP, par la lecture 
-         * du fichier qui contient cette ressource et l'envoi de son contenu (texte ou binaire) au 
-         * client HTTP. 
-         * 
-         * Le traitement d'une ressource web dynamique se traduit, côté serveur HTTP, 
-         * par l'exécution du programme qui contient cette ressource et l'envoi du résultat au client HTTP.
-         * 
-         */
-        
-        /*
-         * Ideas to addd: 
-         * 
-         * 
-         */
-        
-        
-        // Send the response
-        // Send the headers
-        
-//        out.println("HTTP/1.0 200 OK");
-//        out.println("Content-Type: text/html");
-//        out.println("Server: Bot");
-//        // this blank line signals the end of the headers
-//        out.println("");
-        // Send the HTML page
-//        InputStream htmlIn = this.getClass().getClassLoader()
-//                .getResourceAsStream("Adder.html");
-//        if(htmlIn!=null) {
-//        	
-//        	String si = new BufferedReader(new InputStreamReader(htmlIn))
-//        			.lines().collect(Collectors.joining("\n"));
-//        	out.println(si);
-//        }
-                
-
-        
-        // image etc.
-
+  
         
         out.flush();
         remote.close();
@@ -193,6 +166,10 @@ public class WebServer {
     }
   }
   
+  /**
+   * Construct the header for the internal server  error
+   * @param out
+   */
   public void makeServerErrorHeader(PrintWriter out) {
 	  out.println("HTTP/1.0 500 Internal Server Error");
 	  out.println("Content-Type: text/html");
@@ -200,6 +177,10 @@ public class WebServer {
 	  out.println("");  
   }
   
+  /**
+   * Construct the header for the not implemented error concerning the HTTP methods not implemented
+   * @param out
+   */
   public void makeNotImplementedHeader(PrintWriter out) {
 	  out.println("HTTP/1.0 501 Not Implemented");
 	  out.println("Content-Type: text/html");
@@ -207,6 +188,10 @@ public class WebServer {
 	  out.println("");  
   }
   
+  /**
+   * Construct the header for the not found pages
+   * @param out
+   */
   public void makeNotFoundHeader(PrintWriter out,long length) {
 	  out.println("HTTP/1.0 404 Not Found");
 	  out.println("Content-Type: text/html");
@@ -215,6 +200,10 @@ public class WebServer {
 	  out.println("");  
   }
   
+  /**
+   * Construct the header for the created header
+   * @param out
+   */
   public void makeCreatedHeader(PrintWriter out) {
 	  out.println("HTTP/1.0 201 Created");
 	  out.println("Content-Type: text/html");
@@ -222,6 +211,10 @@ public class WebServer {
 	  out.println("");  
   }
   
+  /**
+   * Construct the header for the Ok response
+   * @param out
+   */
   public void makeHeaderOk(PrintWriter out,String ressourceName,long length) {
 	  //String [] supportedMediaType = {"html","png","jpg","jpeg","gif","rtf","txt","mp3","mp4","xml"};
 	  String []split = ressourceName.split("\\.");
@@ -342,7 +335,7 @@ public class WebServer {
    * @param out
    * @param ressourceName
    */
-  public void postRequest(PrintWriter out, String ressourceName) {
+  public void postRequest(PrintWriter out, String ressourceName,long length,BufferedReader in) {
 	  try {
 		  //Writer fileWriter = new FileWriter("c:\\data\\output.txt", true);  //appends to file
 		  File f = new File(ressourceName);
@@ -351,28 +344,51 @@ public class WebServer {
 			  f = new File(ressourceName);
 			  f.setWritable(true);
 			  f.setReadable(true);
+
 			  BufferedWriter bw = null;
 			  bw = new BufferedWriter(fileWriter);
-		      bw.write("POST");
-		      bw.newLine();
-		      bw.flush();
-		      bw.close();
+			  
+			  char[]buffer = new char [(int)length];
+			  in.read(buffer,0,(int)length);
+			  
+			  bw.write(buffer);
+			  bw.flush();
+			  bw.close();
+			  
+//			  String strCurrentLine;
+//			  int i=1;
+//			  while (((strCurrentLine = in.readLine()) != null) &&(i<length)){
+//				  System.out.print(strCurrentLine);
+//			      bw.write(strCurrentLine);
+//			      i++;
+//			  }
+//			  
+//			  //in.close();
+//			  bw.newLine();
+		      
+		      
 			  //header de succes
 			  makeHeaderOk(out,ressourceName,f.length());
 			  out.flush();
+			  
 		  }else {
 			 if(f.createNewFile()) { //Created 201 creates the new file
-				 makeCreatedHeader(out);
+				
 				 Writer fileWriter = new FileWriter(ressourceName, true); //append file
 				  f = new File(ressourceName);
 				  f.setWritable(true);
 				  f.setReadable(true);
 				  BufferedWriter bw = null;
 				  bw = new BufferedWriter(fileWriter);
-			      bw.write("POST");
-			      bw.newLine();
-			      bw.flush();
-			      bw.close();
+				  
+				  char[]buffer = new char [(int)length];
+				  in.read(buffer,0,(int)length);
+				  
+				  bw.write(buffer);
+				  bw.flush();
+				  bw.close();
+				 
+				  makeCreatedHeader(out);
 			 } else { //500 Internal Server Error
 				 makeServerErrorHeader(out);
 			 }
@@ -444,7 +460,7 @@ public class WebServer {
    * @param out
    * @param ressourceName
    */
-  public void putRequest(PrintWriter out, String ressourceName) {
+  public void putRequest(PrintWriter out, String ressourceName,long length, BufferedReader in) {
 	  try {
 		  File f = new File(ressourceName);
 		  if(f.exists() && !f.isDirectory()) { //OK 200 overwrites the file
@@ -452,10 +468,14 @@ public class WebServer {
 			  f = new File(ressourceName);
 			  BufferedWriter bw = null;
 			  bw = new BufferedWriter(fileWriter);
-		      bw.write("PUT");
-		      bw.newLine();
-		      bw.flush();
-		      bw.close();
+			  char[]buffer = new char [(int)length];
+			  in.read(buffer,0,(int)length);
+			  
+			  bw.write(buffer);
+			  bw.flush();
+			  bw.close();
+		      
+		      
 			  //header de succes
 			  makeHeaderOk(out,ressourceName,f.length());
 			  out.flush();
@@ -465,10 +485,13 @@ public class WebServer {
 				  f = new File(ressourceName);
 				  BufferedWriter bw = null;
 				  bw = new BufferedWriter(fileWriter);
-			      bw.write("PUT");
-			      bw.newLine();
-			      bw.flush();
-			      bw.close();
+				  char[]buffer = new char [(int)length];
+				  in.read(buffer,0,(int)length);
+				  
+				  bw.write(buffer);
+				  bw.flush();
+				  bw.close();
+			      
 				 makeCreatedHeader(out);
 			 } else { //500 Internal Server Error
 				 makeServerErrorHeader(out);
@@ -533,10 +556,10 @@ public class WebServer {
    * Start the application.
    * 
    * @param args
-   *            Command line parameters are not used.
+   *          
    */
   public static void main(String args[]) {
-    WebServer ws = new WebServer();
+    WebServer ws = new WebServer(Integer.parseInt(args[0]));
     ws.start();
   }
 }

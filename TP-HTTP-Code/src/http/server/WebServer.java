@@ -23,13 +23,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
+ * Basic WebServer designed to react to specific requests. 
+ * 
+ * 
  * Example program from Chapter 1 Programming Spiders, Bots and Aggregators in
  * Java Copyright 2001 by Jeff Heaton
  * 
  * WebServer is a very simple web-server. Any request is responded with a very
  * simple web-page.
  * 
- * @author Jeff Heaton
+ *
+ * @author B06 - Groupe 1 - 4IF -2020-2021  - Liguori Agathe Lesné Anaëlle
  * @version 1.0
  */
 public class WebServer {
@@ -37,8 +41,8 @@ public class WebServer {
 	private int port;
 	
   /**
-   * WebServer constructor.
-   *
+   * WebServer Constructor.
+   * @param port to connect to the server
    */
 	public WebServer(int port) {
 		this.port=port;
@@ -168,7 +172,7 @@ public class WebServer {
   
   /**
    * Construct the header for the internal server  error
-   * @param out
+   * @param out stream to send the header
    */
   public void makeServerErrorHeader(PrintWriter out) {
 	  out.println("HTTP/1.0 500 Internal Server Error");
@@ -179,7 +183,7 @@ public class WebServer {
   
   /**
    * Construct the header for the not implemented error concerning the HTTP methods not implemented
-   * @param out
+   * @param out stream to send the header
    */
   public void makeNotImplementedHeader(PrintWriter out) {
 	  out.println("HTTP/1.0 501 Not Implemented");
@@ -190,7 +194,8 @@ public class WebServer {
   
   /**
    * Construct the header for the not found pages
-   * @param out
+   * @param out stream to send the header
+   * @param length content-length
    */
   public void makeNotFoundHeader(PrintWriter out,long length) {
 	  out.println("HTTP/1.0 404 Not Found");
@@ -202,7 +207,7 @@ public class WebServer {
   
   /**
    * Construct the header for the created header
-   * @param out
+   * @param out stream to send the header
    */
   public void makeCreatedHeader(PrintWriter out) {
 	  out.println("HTTP/1.0 201 Created");
@@ -213,7 +218,9 @@ public class WebServer {
   
   /**
    * Construct the header for the Ok response
-   * @param out
+   * @param out stream to send the header
+   * @param ressourceName path of the file
+   * @param length content-length
    */
   public void makeHeaderOk(PrintWriter out,String ressourceName,long length) {
 	  //String [] supportedMediaType = {"html","png","jpg","jpeg","gif","rtf","txt","mp3","mp4","xml"};
@@ -278,8 +285,9 @@ public class WebServer {
   /**
    * GET is used to request data from a specified resource. 
    * source of the definition : www.w3schools.com
-   * @param out
-   * @param ressourceName
+   * @param out stream to send the header
+   * @param ressourceName path of the file
+   * @param outPut stream to send the data
    */
   public void getRequest(PrintWriter out, OutputStream outPut, String ressourceName) {
 	  try {
@@ -332,8 +340,10 @@ public class WebServer {
   /**
    * POST is used to send data to a server to create/update a resource.
    * source of the definition : www.w3schools.com
-   * @param out
-   * @param ressourceName
+   * @param out stream to send the header
+   * @param ressourceName path of the file
+   * @param length content-length
+   * @param in to read the data sent after the header
    */
   public void postRequest(PrintWriter out, String ressourceName,long length,BufferedReader in) {
 	  try {
@@ -413,8 +423,8 @@ public class WebServer {
    * HEAD requests are useful for checking what a GET request will return before 
    * actually making a GET request - like before downloading a large file or response body.
    * source of the definition : www.w3schools.com
-   * @param out
-   * @param ressourceName
+   * @param out stream to send the header
+   * @param ressourceName path of the file
    */
   public void headRequest(PrintWriter out, String ressourceName) {
 	  try {
@@ -457,8 +467,10 @@ public class WebServer {
    * In contrast, calling a POST request repeatedly have side effects of creating the same resource 
    * multiple times.
    * source of the definition : www.w3schools.com
-   * @param out
-   * @param ressourceName
+   * @param out stream to send the header
+   * @param ressourceName path of the file
+   * @param length content-length
+   * @param in sent to read the data after the header
    */
   public void putRequest(PrintWriter out, String ressourceName,long length, BufferedReader in) {
 	  try {
@@ -514,8 +526,8 @@ public class WebServer {
   /**
    * The DELETE method deletes the specified resource.
    * source of the definition : www.w3schools.com
-   * @param out
-   * @param ressourceName
+   * @param out stream to send the header
+   * @param ressourceName path of the file
    */
   public void deleteRequest(PrintWriter out, String ressourceName) {
 	  try {
@@ -555,7 +567,7 @@ public class WebServer {
   /**
    * Start the application.
    * 
-   * @param args
+   * @param args define the port when calling the program
    *          
    */
   public static void main(String args[]) {
